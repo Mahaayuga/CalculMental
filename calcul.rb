@@ -1,52 +1,60 @@
-class ScoreKeeper
-  def initialize
-    @minuteur = []
-    @cpt = @err = 0
-  end
-
-  def <<(score)
-    @minuteur << score.to_f
-    @cpt += 1
-  end
-
-  def erreur (a, b)
-    @err += 1
-    printf "# => %i \n", a * b
-  end
-
-  def taux
-    Float(@err) / @cpt unless @cpt.zero?
-  end
-
-  def moyenne
-    fail "No score" if @cpt.zero?
-    Float( @minuteur.inject(:+) ) / @cpt
-  end
-end
-
-#IMPROVE init du stop
 stop = "!"
 puts "\nAppuyer sur #{stop} pour arrêter\n\n"
 
-egg = ScoreKeeper.new
+score = { time: 0, err: 0, try: 0 }
+level = { tmp_success: 0, tmp_fail: 0, max_a: 5, max_b: 5 }
 
-#MAIN
 loop do
-  a, b= rand(2..15), rand(2..15)
+  a = rand(2..level[:max_a])
+  b = rand(2..level[:max_b])
 
   deb = Time.now
-
   print "#{a} x #{b} = "
-  ans = gets
+  reponse = gets.chomp
+  fin     = Time.now
 
-  fin = Time.now
+  break if reponse == stop
+  if reponse.to_i == a * b
 
-  break if ans.chomp == stop 
-  egg.erreur(a, b) unless ans.to_i == a * b
-  egg << fin - deb
+    level[:tmp_success] += 1
+    level[:tmp_fail] = 0
+     
+    if level[:tmp_success] == 3
+      level[:max_a] += 1 unless level[:max_a] == 20
+      level[:max_b] += 1 unless level[:max_b] == 20 
+      level[:tmp_success] = 0
+    end
+
+  else
+    printf "# => %i \n", a * b
+    score[:err]      += 1
+
+    level[:tmp_fail] += 1
+    level[:tmp_success] = 0
+
+    unless ( level[:tmp_fail] == 2 ) or ( fin - deb >= 10 )
+      level[:max_a] -= 1 unless level[:max_a] == 5
+      level[:max_b] -= 1 unless level[:max_b] == 5
+      level[:tmp_fail] == 0    
+    end
+
+  end
+  
+  score[:time] += fin - deb
+  score[:try] += 1
+
 end
 
-printf "\nau revoir ! %2.1f sec\t%2.1f pourcent d'erreur\n\n", egg.moyenne, egg.taux * 100
 
-# une multiplication, un prompt pour la réponse, un timer, des moyennes
-# un level-up à venir
+
+unless score[:try] == 0
+  printf "\n\tAu revoir !\n" \
+         "\t%2.1f sec par réponse\n" \
+         "\t%2.1f %% d'erreur\n\n", \
+         score[:time]/score[:try], (score[:err].to_f/score[:try].to_f) * 100
+
+  puts "DEBUG #{level}"
+  puts "DEBUG #{score}"
+  printf "\n"
+  
+end
